@@ -91,9 +91,11 @@ void Movable::PropagateTransform() // NOLINT(misc-no-recursion)
 
 void Movable::SetCenter(const Eigen::Vector3f& point)
 {
+    std::cout << "aggregatedTransform before SetCenter:\n" << aggregatedTransform << std::endl;
     Tout.pretranslate(point);
     Tin.pretranslate(-point);
     PropagateTransform();
+    std::cout << "aggregatedTransform after SetCenter:\n" << aggregatedTransform << std::endl;
 }
 
 void Movable::Translate(const Eigen::Vector3f& vec)
@@ -143,6 +145,13 @@ void Movable::Rotate(float angle, const Eigen::Vector3f& axisVec)
 {
     if (isStatic) return;
     Tout.rotate(Eigen::AngleAxisf(angle, axisVec.normalized()));
+    PropagateTransform();
+}
+
+void Movable::Rotate(const Eigen::Quaternionf &quat)
+{
+    if (isStatic) return;
+    Tout.rotate(quat);
     PropagateTransform();
 }
 

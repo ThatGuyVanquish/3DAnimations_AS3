@@ -15,12 +15,13 @@ public:
     void ScrollCallback(cg3d::Viewport* viewport, int x, int y, int xoffset, int yoffset, bool dragging, int buttonState[]) override;
     void CursorPosCallback(cg3d::Viewport* viewport, int x, int y, bool dragging, int* buttonState)  override;
     void KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, int scancode, int action, int mods) override;
-     Eigen::Vector3f GetSpherePos(int dir);
+    Eigen::Vector3f GetSpherePos();
 private:
     std::shared_ptr<Movable> root;
     std::shared_ptr<Movable> armRoot;
     std::shared_ptr<cg3d::Model> sphere1;
     std::vector<std::shared_ptr<cg3d::Model>> cyls, axis;
+    std::shared_ptr<cg3d::Model> global_axis;
     int pickedIndex = 0;
     int tipIndex = 0;
     Eigen::VectorXi EMAP;
@@ -28,6 +29,10 @@ private:
     Eigen::VectorXi EQ;
   // If an edge were collapsed, we'd collapse it to these points:
     Eigen::MatrixXd V, C, N, T, points,edges,colors;
-    Eigen::Vector4f init_tip;
-    std::vector<Eigen::Vector4f> tips;
+    Eigen::RowVector3f init_tip;
+    std::vector<Eigen::RowVector3f> tips;
+    std::vector<Eigen::Vector3f> tip_points;
+    std::vector<Eigen::Vector4f> tips_position;
+    Eigen::Vector4f initial_tip_pos = Eigen::Vector4f(0,0,0.8f,1);
+    float scaleFactor;
 };

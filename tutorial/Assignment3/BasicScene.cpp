@@ -57,12 +57,14 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     sphere1 = Model::Create( "sphere",sphereMesh, material);
 
     // a common invisible parent for the multi-links arm and axis
-    root->AddChild(armRoot = Movable::Create("armRoot"));
+    armRoot = Movable::Create("armRoot");
+//    AddChild(armRoot);
+    root->AddChild(armRoot);
 
     // scale factor for the multi-links arm
-    float scaleFactor = 1;
+    scaleFactor = 1;
 
-    // global Axis
+    // global Axis (for sanity checks)
     Eigen::MatrixXd vertices(6,3);
     vertices << -1,0,0,1,0,0,0,-1,0,0,1,0,0,0,-1,0,0,1;
     Eigen::MatrixXi faces(3,2);
@@ -70,52 +72,56 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     Eigen::MatrixXd vertexNormals = Eigen::MatrixXd::Ones(6,3);
     Eigen::MatrixXd textureCoords = Eigen::MatrixXd::Ones(6,2);
     std::shared_ptr<Mesh> coordsys = std::make_shared<Mesh>("coordsys",vertices,faces,vertexNormals,textureCoords);
-    axis.push_back(Model::Create("axis",coordsys,material1));
+    global_axis = Model::Create("global axis",coordsys,material1);
+    global_axis->mode = 1;
+    //cylinders axis
+    axis.push_back(Model::Create("axis0",coordsys,material1));
+    axis.push_back(Model::Create("axis1",coordsys,material1));
+    axis.push_back(Model::Create("axis2",coordsys,material1));
+    // cylinders
+    cyls.push_back( Model::Create("cyl0",cylMesh, material));
+    cyls.push_back( Model::Create("cyl1",cylMesh, material));
+    cyls.push_back( Model::Create("cyl2",cylMesh, material));
+    // define dependencies
+    root->AddChild(global_axis);
+    armRoot->AddChild(axis[0]);
+    armRoot->AddChild(cyls[0]);
+    for(int i = 1;i < 3; i++)
+    {
+        cyls[i-1]->AddChild(cyls[i]);
+        cyls[i-1]->AddChild(axis[i]);
+    }
+    // initial transformations
+    cyls[0]->Scale(scaleFactor,Axis::Z);
+    cyls[0]->Translate({0,0,0.8f*scaleFactor});
+    cyls[0]->SetCenter(Eigen::Vector3f(0,0,-0.8f*scaleFactor));
     axis[0]->mode = 1;
     axis[0]->Scale(2.0f*1.6f*scaleFactor);
-    armRoot->AddChild(axis[0]);
-
-    // cylinders
-    cyls.push_back( Model::Create("cyl",cylMesh, material));
-    cyls[0]->Scale(scaleFactor,Axis::X);
-    cyls[0]->SetCenter(Eigen::Vector3f(0,0,-0.8f*scaleFactor));
-    armRoot->AddChild(cyls[0]);
-
     for(int i = 1;i < 3; i++)
-    { 
-        cyls.push_back( Model::Create("cyl", cylMesh, material));
+    {
         cyls[i]->Scale(scaleFactor,Axis::Z);
         cyls[i]->Translate(1.6f*scaleFactor,Axis::Z);
         cyls[i]->SetCenter(Eigen::Vector3f(0,0,-0.8f*scaleFactor));
-        cyls[i-1]->AddChild(cyls[i]);
-
         // cylinder i axis system according to the previous cylinder
-        axis.push_back(Model::Create("axis",coordsys,material1));
         axis[i]->mode = 1;
         axis[i]->Scale(2.0f*1.6f*scaleFactor);
         axis[i]->Translate(0.8f*scaleFactor,Axis::Z);
-        axis[i]->SetCenter(Eigen::Vector3f(0,0,-0.8f*scaleFactor));
-        cyls[i-1]->AddChild(axis[i]);
-
     }
-    cyls[0]->Translate({0,0,0.8f*scaleFactor});
 
     // init tips position
-    init_tip = Eigen::Vector4f(0,0,1.6f, 1);
-    tips.push_back(cyls[0]->GetTransform() * init_tip);
-    tips.push_back(cyls[1]->GetTransform() * init_tip);
-    tips.push_back(cyls[2]->GetTransform() * init_tip);
-
+    tips_position.push_back(armRoot->GetAggregatedTransform() * Eigen::Vector4f(0,0,0,1));
+    tips_position.push_back(cyls[0]->GetAggregatedTransform() * initial_tip_pos);
+    tips_position.push_back(cyls[1]->GetAggregatedTransform() * initial_tip_pos);
+    tips_position.push_back(cyls[2]->GetAggregatedTransform() * initial_tip_pos);
 
     // sphere
     sphere1->showWireframe = true;
     sphere1->Translate({5,0,0});
 
 
-    camera->Translate(50, Axis::X);
-    camera->Rotate(89.55f, Axis::Y);
+    camera->Translate(30, Axis::X);
+    camera->Rotate(M_PI_2, Axis::Y);
     root->AddChild(sphere1);
-
 
 }
 
@@ -128,13 +134,6 @@ void BasicScene::Update(const Program& program, const Eigen::Matrix4f& proj, con
     program.SetUniform1f("specular_exponent", 5.0);
     program.SetUniform4f("light_position", 0.0, 15.0, 0.0, 1.0);
 
-    auto print = [&](){
-        std::cout << "R*Rt:" << cyls[1]->GetRotation() * cyls[1]->GetRotation().transpose() << std::endl;
-        std::cout << "R.determinant:" << cyls[1]->GetRotation().determinant() << std::endl;
-    };
-
-
-//    cyl->Rotate(0.001f, Axis::Y);
 }
 
 void BasicScene::MouseCallback(Viewport* viewport, int x, int y, int button, int action, int mods, int buttonState[])
@@ -174,8 +173,14 @@ void BasicScene::ScrollCallback(Viewport* viewport, int x, int y, int xoffset, i
     // note: there's a (small) chance the button state here precedes the mouse press/release event
     auto system = camera->GetRotation().transpose();
     if (pickedModel) {
-        pickedModel->TranslateInSystem(system, {0, 0, -float(yoffset)});
-        pickedToutAtPress = pickedModel->GetTout();
+        if(std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end())
+        {
+            armRoot->TranslateInSystem(system, {0, 0, -float(yoffset)});
+            pickedToutAtPress = armRoot->GetTout();
+        } else {
+            pickedModel->TranslateInSystem(system, {0, 0, -float(yoffset)});
+            pickedToutAtPress = pickedModel->GetTout();
+        }
     } else {
         camera->TranslateInSystem(system, {0, 0, -float(yoffset)});
         cameraToutAtPress = camera->GetTout();
@@ -204,7 +209,7 @@ void BasicScene::CursorPosCallback(Viewport* viewport, int x, int y, bool draggi
                 pickedModel->RotateInSystem(system, float(yAtPress - y) / angleCoeff, Axis::X);
             }
         } else {
-           // camera->SetTout(cameraToutAtPress);
+            // camera->SetTout(cameraToutAtPress);
             if (buttonState[GLFW_MOUSE_BUTTON_RIGHT] != GLFW_RELEASE)
                 root->TranslateInSystem(system, {-float(xAtPress - x) / moveCoeff/10.0f, float( yAtPress - y) / moveCoeff/10.0f, 0});
             if (buttonState[GLFW_MOUSE_BUTTON_MIDDLE] != GLFW_RELEASE)
@@ -222,26 +227,44 @@ void BasicScene::CursorPosCallback(Viewport* viewport, int x, int y, bool draggi
 void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scancode, int action, int mods)
 {
     auto system = camera->GetRotation().transpose();
+    Eigen::Vector3f spherePos;
 
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         switch (key) // NOLINT(hicpp-multiway-paths-covered)
         {
+            case GLFW_KEY_ENTER:
+                armRoot->Translate(Eigen::Vector3f(1.6f, 1.6f, 1.6f));
+                break;
+            case GLFW_KEY_SPACE:
+                calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
+                spherePos = GetSpherePos();
+                if ((tips_position[0].head(3) - spherePos).norm() > 3*1.6f*scaleFactor)
+                {
+                    std::cout << "cannot reach.\ndestination:\n" << spherePos
+                                << "\nstart tip position:\n" << tips_position[0].head(3)
+                                << "\ndistance:\n" << (tips_position[0].head(3) - spherePos).norm()
+                                << std::endl;
+                } else {
+                    std::cout << "reachable!!\ndestination:\n" << spherePos
+                              << "\nstart tip position:\n" << tips_position[0].head(3)
+                              << "\ndistance:\n" << (tips_position[0].head(3) - spherePos).norm()
+                              << std::endl;
+                }
+                break;
             case GLFW_KEY_ESCAPE:
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
                 break;
             case GLFW_KEY_UP:
-                cyls[pickedIndex]->RotateInSystem(system, 0.1f, Axis::X);
+                cyls[pickedIndex]->RotateInSystem(axis[pickedIndex]->GetTout().rotation(), M_PI_2, Axis::X);
                 break;
             case GLFW_KEY_DOWN:
-                cyls[pickedIndex]->RotateInSystem(system, -0.1f, Axis::X);
+                cyls[pickedIndex]->RotateInSystem(axis[pickedIndex]->GetTout().rotation(), -M_PI_2, Axis::X);
                 break;
             case GLFW_KEY_LEFT:
-                cyls[pickedIndex]->RotateInSystem(system, 0.1f, Axis::Y);
+                cyls[pickedIndex]->RotateInSystem(axis[pickedIndex]->GetTout().rotation(), M_PI_2, Axis::Y);
                 break;
             case GLFW_KEY_RIGHT:
-                cyls[pickedIndex]->RotateInSystem(system, -0.1f, Axis::Y);
-                std::cout << "R*Rt:" << cyls[1]->GetRotation() * cyls[1]->GetRotation().transpose() << std::endl;
-                std::cout << "R.determinant:" << cyls[1]->GetRotation().determinant() << std::endl;
+                cyls[pickedIndex]->RotateInSystem(axis[pickedIndex]->GetTout().rotation(), -M_PI_2, Axis::Y);
                 break;
             case GLFW_KEY_W:
                 camera->TranslateInSystem(system, {0, 0.1f, 0});
@@ -265,10 +288,12 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                 if(std::find(cyls.begin(), cyls.end(), pickedModel) != cyls.end())
                 {
                     Eigen::Matrix3f phiZ, thetaX, psiZ;
-                    getZXZRotationMatrices(pickedModel->GetRotation(), phiZ, thetaX, psiZ);
+                    std::cout << "picked model: " << pickedModel->GetMesh()->name << std::endl;
+                    getZXZRotationMatrices(pickedModel->GetTout().rotation(), phiZ, thetaX, psiZ);
                     std::cout << "phiZ:\n" << phiZ << std::endl;
                     std::cout << "thetaX:\n" << thetaX << std::endl;
                     std::cout << "psiZ:\n" << psiZ << std::endl;
+                    printTransform(pickedModel->GetTransform(), pickedModel->GetTout().rotation());
                 } else {
                     Eigen::Matrix3f phiZ, thetaX, psiZ;
                     getZXZRotationMatrices(root->GetRotation(), phiZ, thetaX, psiZ);
@@ -279,14 +304,13 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                 break;
             case GLFW_KEY_T:
                 // recalculate tips position
-                tips.push_back(cyls[0]->GetTransform() * init_tip);
-                tips.push_back(cyls[1]->GetTransform() * init_tip);
-                tips.push_back(cyls[2]->GetTransform() * init_tip);
-                std::cout << "tips position:\n"
-                            << "link 0\n" << tips[0].head(3) << "\n"
-                            << "link 1\n" << tips[1].head(3) << "\n"
-                            << "link 2\n" << tips[2].head(3) << "\n"
-                            << std::endl;
+                calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
+                std::cout << "tips_position position:\n"
+                          << "link 0\n" << std::setprecision(5) << tips_position[0].head(3) << "\n"
+                          << "link 1\n" << std::setprecision(5) << tips_position[1].head(3) << "\n"
+                          << "link 2\n" << std::setprecision(5) << tips_position[2].head(3) << "\n"
+                          << "link 3\n" << std::setprecision(5) << tips_position[3].head(3) << "\n"
+                          << std::endl;
                 break;
             case GLFW_KEY_Y:
                 // sphere center is (0, 0, 0) hens the translation vector is the center position in the scene
@@ -300,40 +324,13 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                 if (pickedIndex < cyls.size() - 1)
                     pickedIndex++;
                 break;
-            case GLFW_KEY_3:
-                if (tipIndex > 0)
-                {
-                    tipIndex--;
-                    sphere1->Translate(GetSpherePos(-1));
-                }
-//                {
-//                  if(tipIndex == cyls.size())
-//                    tipIndex--;
-//                  sphere1->Translate(GetSpherePos(-1));
-//                  tipIndex--;
-//                }
-                break;
-            case GLFW_KEY_4:
-                if(tipIndex < cyls.size())
-                {
-                    sphere1->Translate(GetSpherePos(1));
-                    tipIndex++;
-                }
-//                {
-//                    if(tipIndex < 0)
-//                      tipIndex++;
-//                    sphere1->Translate(GetSpherePos(1));
-//                    tipIndex++;
-//                }
-                break;
         }
     }
 }
 
-Eigen::Vector3f BasicScene::GetSpherePos(int dir)
+Eigen::Vector3f BasicScene::GetSpherePos()
 {
-      Eigen::Vector3f l = Eigen::Vector3f(0,0,1.6f);
-      Eigen::Vector3f res;
-      res = cyls[tipIndex]->GetRotation()*(dir*l);
-      return res;  
+    std::cout << sphere1->GetTransform() << std::endl;
+    return (sphere1->GetTransform() * Eigen::Vector4f(0,0,0,1)).head(3);
 }
+

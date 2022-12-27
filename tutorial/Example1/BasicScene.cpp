@@ -270,31 +270,45 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                     pickedIndex++;
                 break;
             case GLFW_KEY_3:
-                if( tipIndex >= 0)
+                if( tipIndex > 0)
                 {
-                  if(tipIndex == cyls.size())
-                    tipIndex--;
-                  sphere1->Translate(GetSpherePos());
-                  tipIndex--;
+                    std::cout << "index start: " << tipIndex << std::endl;
+                    if(tipIndex == cyls.size()) {
+                        tipIndex--;
+                        sphere1->Translate(GetSpherePos(-1));
+                    } else {
+                        sphere1->Translate(GetSpherePos(-1));
+                        tipIndex--;
+                    }
+                    std::cout << "index end: " << tipIndex << std::endl;
+
                 }
                 break;
             case GLFW_KEY_4:
                 if(tipIndex < cyls.size())
                 {
-                    if(tipIndex < 0)
-                      tipIndex++;
-                    sphere1->Translate(GetSpherePos());
+                    std::cout << "index start: " << tipIndex << std::endl;
+//                    if(tipIndex < 0)
+//                      tipIndex++;
+                    sphere1->Translate(GetSpherePos(1));
                     tipIndex++;
+                    std::cout << "index end: " << tipIndex << std::endl;
                 }
                 break;
         }
     }
 }
 
-Eigen::Vector3f BasicScene::GetSpherePos()
+Eigen::Vector3f BasicScene::GetSpherePos(int dir)
 {
-      Eigen::Vector3f l = Eigen::Vector3f(1.6f,0,0);
-      Eigen::Vector3f res;
-      res = cyls[tipIndex]->GetRotation()*l;   
+    Eigen::Vector3f res;
+    if (dir == 1)
+    {
+        Eigen::Vector3f l = dir*Eigen::Vector3f(1.6f,0,0);
+        res = cyls[tipIndex]->GetTout().rotation()*l;
+    } else {
+        Eigen::Vector3f l = dir*Eigen::Vector3f(1.6f,0,0);
+        res = cyls[tipIndex]->GetTout().rotation().transpose()*l;
+    }
       return res;  
 }

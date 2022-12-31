@@ -49,34 +49,54 @@ static void calcTipsPosition(const Eigen::Vector4f& initial_tip_pos,
     tips_position[3] = root->GetAggregatedTransform().inverse() * cyls[2]->GetAggregatedTransform() * initial_tip_pos;
 }
 
-static bool cyclicCoordinateDescent(std::vector<std::shared_ptr<cg3d::Model>> cyls, 
+static bool inGimbalLock(Eigen::Matrix3f rotation)
+{
+    return rotation(0,0) == 0 &&
+           rotation(0,1) == 0 &&
+           rotation(0,2) == 1 &&
+           rotation(1,2) == 0 &&
+           rotation(2,2) == 0;
+}
+
+static bool cyclicCoordinateDescent(std::vector<std::shared_ptr<cg3d::Model>> cyls,
                                     std::vector<Eigen::Vector4f> tips,
                                     Eigen::Vector3f destination, const float delta, int &index,
                                     const std::shared_ptr<cg3d::Movable>& root,
-                                    const std::shared_ptr<cg3d::Movable>& armRoot
-                                    /*,Eigen::Quaternionf &q*/)
+                                    const std::shared_ptr<cg3d::Movable>& armRoot)
 {
+    calcTipsPosition({ 0,0,0.8f,1 }, tips, root, armRoot, cyls);
     if (index == -1) index = cyls.size() - 1;
+    std::cout << "index is " << index << std::endl;
     // Calculate R and E
     Eigen::Vector3f R = tips[index].head(3);
     Eigen::Vector3f E = tips[cyls.size()].head(3);
-    Eigen::Vector3f RE = E - R;
-    Eigen::Vector3f RD = destination - R;
-    //float a = acos(RD.dot(RE));
+    Eigen::Vector3f RE = (E - R).normalized();
+    Eigen::Vector3f RD = (destination - R).normalized();
+    std::cout << "RE is " << RE.transpose() << std::endl;
+    std::cout << "RD is " << RD.transpose() << std::endl;
+
+//    int dot = RD.normalized().dot(RE.normalized());
+//    float a = acos(RD.normalized().dot(RE.normalized()));
+//    Eigen::Vector3f normal = RE.normalized().cross(RD.normalized());
+//    cyls[index]->Rotate(a/10.0f, normal);
     Eigen::Quaternionf q = Eigen::Quaternionf::FromTwoVectors(RE, RD);
     q = q.slerp(0.9f, Eigen::Quaternionf::Identity());
     cyls[index]->Rotate(q);
-
+    if (inGimbalLock(cyls[index]->GetRotation()))
+    {
+        std::cout << "inGimbalLock" << std::endl;
+    }
     // calculate new delta
-    calcTipsPosition({ 0,0,0.81f,1 }, tips, root, armRoot, cyls);
+    calcTipsPosition({ 0,0,0.8f,1 }, tips, root, armRoot, cyls);
     E = tips[cyls.size()].head(3);
     Eigen::Vector3f DE = destination - E;
     std::cout << "distance is " << DE.norm() << std::endl;
-    if (DE.norm() < delta) 
-    {  
+    if (DE.norm() < delta)
+    {
         index = cyls.size() - 1;
         return false;
     }
     index--;
     return true;
 }
+

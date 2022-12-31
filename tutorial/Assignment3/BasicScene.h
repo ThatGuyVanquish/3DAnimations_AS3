@@ -19,7 +19,7 @@ public:
     Eigen::Vector3f GetSpherePos();
     std::vector<Eigen::Vector4f> GetTipsPositionVec();
 
-    int previousMovingCyl = cyls.size() - 1;
+    int previousMovingCyl;
     bool doCyclicDescent = false;
 
 private:

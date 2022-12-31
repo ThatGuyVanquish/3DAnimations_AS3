@@ -128,6 +128,7 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     camera->cg3d::Movable::Rotate(M_PI_2, Axis::Y);
     root->AddChild(sphere1);
 
+    previousMovingCyl = cyls.size() - 1;
 }
 
 void BasicScene::Update(const Program& program, const Eigen::Matrix4f& proj, const Eigen::Matrix4f& view, const Eigen::Matrix4f& model)
@@ -139,6 +140,12 @@ void BasicScene::Update(const Program& program, const Eigen::Matrix4f& proj, con
     program.SetUniform1f("specular_exponent", 5.0);
     program.SetUniform4f("light_position", 0.0, 15.0, 0.0, 1.0);
 
+    calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
+    Eigen::Vector3f spherePos = GetSpherePos();
+    if ((tips_position[0].head(3) - spherePos).norm() > 3*1.6f*scaleFactor + DELTA)
+    {
+        doCyclicDescent = false;
+    }
 }
 
 void BasicScene::MouseCallback(Viewport* viewport, int x, int y, int button, int action, int mods, int buttonState[])
@@ -243,7 +250,7 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
             case GLFW_KEY_SPACE:
                 calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
                 spherePos = GetSpherePos();
-                if ((tips_position[0].head(3) - spherePos).norm() > 3*1.6f*scaleFactor)
+                if ((tips_position[0].head(3) - spherePos).norm() > 3*1.6f*scaleFactor + DELTA)
                 {
                     std::cout << "cannot reach.\ndestination:\n" << spherePos.transpose()
                                 << "\nstart tip position:\n" << tips_position[0].head(3).transpose()
@@ -343,10 +350,11 @@ void BasicScene::nextCyclicDescentStep()
 Eigen::Vector3f BasicScene::GetSpherePos()
 {
     return (sphere1->GetTransform() * Eigen::Vector4f(0,0,0,1)).head(3);
+//    return (root->GetAggregatedTransform() * sphere1->GetAggregatedTransform() * Eigen::Vector4f(0,0,0,1)).head(3);
 }
 
-std::vector<Eigen::Vector4f> BasicScene::GetTipsPositionVec() {
-    calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
-    return tips_position;
-}
+//std::vector<Eigen::Vector4f> BasicScene::GetTipsPositionVec() {
+//    calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
+//    return tips_position;
+//}
 

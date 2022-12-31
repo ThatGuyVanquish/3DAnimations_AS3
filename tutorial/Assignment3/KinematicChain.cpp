@@ -59,7 +59,7 @@ static bool cyclicCoordinateDescent(std::vector<std::shared_ptr<cg3d::Model>> cy
     if (index == -1) index = cyls.size() - 1;
     // Calculate R and E
     Eigen::Vector3f R = tips[index].head(3);
-    Eigen::Vector3f E = tips[index + 1].head(3);
+    Eigen::Vector3f E = tips[cyls.size()].head(3);
     Eigen::Vector3f RE = E - R;
     Eigen::Vector3f RD = destination - R;
     //float a = acos(RD.dot(RE));
@@ -68,11 +68,12 @@ static bool cyclicCoordinateDescent(std::vector<std::shared_ptr<cg3d::Model>> cy
     cyls[index]->Rotate(q);
 
     // calculate new delta
-    calcTipsPosition({ 0,0,0.81f }, tips, root, armRoot, cyls);
-    E = tips[index + 1].head(3);
+    calcTipsPosition({ 0,0,0.81f,1 }, tips, root, armRoot, cyls);
+    E = tips[cyls.size()].head(3);
     Eigen::Vector3f DE = destination - E;
+    std::cout << "distance is " << DE.norm() << std::endl;
     if (DE.norm() < delta) 
-    {
+    {  
         index = cyls.size() - 1;
         return false;
     }

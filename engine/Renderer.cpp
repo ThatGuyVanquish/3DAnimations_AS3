@@ -45,6 +45,7 @@ void Renderer::RenderViewportAtPos(int x, int y, Visitor* visitor)
 void Renderer::RenderAllViewports()
 {
     defaultVisitor.Init();
+    viewports[0]->scene->nextCyclicDescentStep();
 
     for (auto& viewport: viewports)
         RenderViewport(viewport.get());

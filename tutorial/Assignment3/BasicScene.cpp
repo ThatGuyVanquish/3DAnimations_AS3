@@ -34,6 +34,8 @@
 
 using namespace cg3d;
 
+static const float DELTA = 0.05;
+
 void BasicScene::Init(float fov, int width, int height, float near, float far)
 {
     camera = Camera::Create( "camera", fov, float(width) / height, near, far);
@@ -246,11 +248,13 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                                 << "\nstart tip position:\n" << tips_position[0].head(3).transpose()
                                 << "\ndistance:\n" << (tips_position[0].head(3) - spherePos).norm()
                                 << std::endl;
+                    doCyclicDescent = false;
                 } else {
                     std::cout << "reachable!!\ndestination:\n" << spherePos.transpose()
                               << "\nstart tip position:\n" << tips_position[0].head(3).transpose()
                               << "\ndistance:\n" << (tips_position[0].head(3) - spherePos).norm()
                               << std::endl;
+                    doCyclicDescent = !doCyclicDescent;
                 }
                 break;
             case GLFW_KEY_ESCAPE:
@@ -327,6 +331,12 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                 break;
         }
     }
+}
+
+void BasicScene::nextCyclicDescentStep()
+{
+    if (doCyclicDescent)
+        doCyclicDescent = cyclicCoordinateDescent(cyls, tips_position, GetSpherePos(), DELTA, previousMovingCyl, root, armRoot);
 }
 
 Eigen::Vector3f BasicScene::GetSpherePos()

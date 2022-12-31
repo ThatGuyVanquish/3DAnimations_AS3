@@ -37,19 +37,45 @@ static void getZXZRotationMatrices(const Eigen::Matrix3f &rotation,
             0, 0, 1;
 }
 
-static void cyclicCoordinateDescent(std::vector<std::shared_ptr<cg3d::Model>> cyls, Eigen::Vector3f destination, float delta)
+static void calcTipsPosition(const Eigen::Vector4f& initial_tip_pos,
+    std::vector<Eigen::Vector4f>& tips_position,
+    const std::shared_ptr<cg3d::Movable>& root,
+    const std::shared_ptr<cg3d::Movable>& armRoot,
+    const std::vector<std::shared_ptr<cg3d::Model>>& cyls)
 {
-
-}
-
-static void calcTipsPosition(const Eigen::Vector4f &initial_tip_pos,
-                             std::vector<Eigen::Vector4f> &tips_position,
-                             const std::shared_ptr<cg3d::Movable> &root,
-                             const std::shared_ptr<cg3d::Movable> &armRoot,
-                             const std::vector<std::shared_ptr<cg3d::Model>> &cyls)
-{
-    tips_position[0] = root->GetAggregatedTransform().inverse() * armRoot->GetAggregatedTransform() * Eigen::Vector4f(0,0,0,1);
+    tips_position[0] = root->GetAggregatedTransform().inverse() * armRoot->GetAggregatedTransform() * Eigen::Vector4f(0, 0, 0, 1);
     tips_position[1] = root->GetAggregatedTransform().inverse() * cyls[0]->GetAggregatedTransform() * initial_tip_pos;
     tips_position[2] = root->GetAggregatedTransform().inverse() * cyls[1]->GetAggregatedTransform() * initial_tip_pos;
     tips_position[3] = root->GetAggregatedTransform().inverse() * cyls[2]->GetAggregatedTransform() * initial_tip_pos;
+}
+
+static bool cyclicCoordinateDescent(std::vector<std::shared_ptr<cg3d::Model>> cyls, 
+                                    std::vector<Eigen::Vector4f> tips,
+                                    Eigen::Vector3f destination, const float delta, int &index,
+                                    const std::shared_ptr<cg3d::Movable>& root,
+                                    const std::shared_ptr<cg3d::Movable>& armRoot
+                                    /*,Eigen::Quaternionf &q*/)
+{
+    if (index == -1) index = cyls.size() - 1;
+    // Calculate R and E
+    Eigen::Vector3f R = tips[index].head(3);
+    Eigen::Vector3f E = tips[index + 1].head(3);
+    Eigen::Vector3f RE = E - R;
+    Eigen::Vector3f RD = destination - R;
+    //float a = acos(RD.dot(RE));
+    Eigen::Quaternionf q = Eigen::Quaternionf::FromTwoVectors(RE, RD);
+    q = q.slerp(0.9f, Eigen::Quaternionf::Identity());
+    cyls[index]->Rotate(q);
+
+    // calculate new delta
+    calcTipsPosition({ 0,0,0.81f }, tips, root, armRoot, cyls);
+    E = tips[index + 1].head(3);
+    Eigen::Vector3f DE = destination - E;
+    if (DE.norm() < delta) 
+    {
+        index = cyls.size() - 1;
+        return false;
+    }
+    index--;
+    return true;
 }

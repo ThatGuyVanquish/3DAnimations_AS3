@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/EulerAngles>
 #include <iostream>
+#define M_PI       3.14159265358979323846   // pi
 
 static void getZXZRotationMatrices(const Eigen::Matrix3f &rotation,
                             Eigen::Matrix3f &phiZ,

@@ -27,7 +27,9 @@
 #include "igl/collapse_edge.h"
 #include "igl/edge_collapse_is_valid.h"
 #include "igl/write_triangle_mesh.h"
+#include <iomanip>
 
+#define M_PI_2     1.57079632679489661923   // pi/2
 // #include "AutoMorphingModel.h"
 
 using namespace cg3d;
@@ -120,7 +122,7 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
 
 
     camera->Translate(30, Axis::X);
-    camera->Rotate(M_PI_2, Axis::Y);
+    camera->cg3d::Movable::Rotate(M_PI_2, Axis::Y);
     root->AddChild(sphere1);
 
 }

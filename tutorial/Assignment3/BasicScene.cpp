@@ -76,6 +76,7 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     std::shared_ptr<Mesh> coordsys = std::make_shared<Mesh>("coordsys",vertices,faces,vertexNormals,textureCoords);
     global_axis = Model::Create("global axis",coordsys,material1);
     global_axis->mode = 1;
+    global_axis->Scale(4,Axis::XYZ);
     //cylinders axis
     axis.push_back(Model::Create("axis0",coordsys,material1));
     axis.push_back(Model::Create("axis1",coordsys,material1));

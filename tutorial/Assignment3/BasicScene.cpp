@@ -242,13 +242,13 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                 spherePos = GetSpherePos();
                 if ((tips_position[0].head(3) - spherePos).norm() > 3*1.6f*scaleFactor)
                 {
-                    std::cout << "cannot reach.\ndestination:\n" << spherePos
-                                << "\nstart tip position:\n" << tips_position[0].head(3)
+                    std::cout << "cannot reach.\ndestination:\n" << spherePos.transpose()
+                                << "\nstart tip position:\n" << tips_position[0].head(3).transpose()
                                 << "\ndistance:\n" << (tips_position[0].head(3) - spherePos).norm()
                                 << std::endl;
                 } else {
-                    std::cout << "reachable!!\ndestination:\n" << spherePos
-                              << "\nstart tip position:\n" << tips_position[0].head(3)
+                    std::cout << "reachable!!\ndestination:\n" << spherePos.transpose()
+                              << "\nstart tip position:\n" << tips_position[0].head(3).transpose()
                               << "\ndistance:\n" << (tips_position[0].head(3) - spherePos).norm()
                               << std::endl;
                 }
@@ -295,7 +295,6 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                     std::cout << "phiZ:\n" << phiZ << std::endl;
                     std::cout << "thetaX:\n" << thetaX << std::endl;
                     std::cout << "psiZ:\n" << psiZ << std::endl;
-                    printTransform(pickedModel->GetTransform(), pickedModel->GetTout().rotation());
                 } else {
                     Eigen::Matrix3f phiZ, thetaX, psiZ;
                     getZXZRotationMatrices(root->GetRotation(), phiZ, thetaX, psiZ);
@@ -308,15 +307,15 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                 // recalculate tips position
                 calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
                 std::cout << "tips_position position:\n"
-                          << "link 0\n" << std::setprecision(5) << tips_position[0].head(3) << "\n"
-                          << "link 1\n" << std::setprecision(5) << tips_position[1].head(3) << "\n"
-                          << "link 2\n" << std::setprecision(5) << tips_position[2].head(3) << "\n"
-                          << "link 3\n" << std::setprecision(5) << tips_position[3].head(3) << "\n"
+                          << "link 0\n" << std::setprecision(5) << tips_position[0].head(3).transpose() << "\n"
+                          << "link 1\n" << std::setprecision(5) << tips_position[1].head(3).transpose() << "\n"
+                          << "link 2\n" << std::setprecision(5) << tips_position[2].head(3).transpose() << "\n"
+                          << "link 3\n" << std::setprecision(5) << tips_position[3].head(3).transpose() << "\n"
                           << std::endl;
                 break;
             case GLFW_KEY_Y:
                 // sphere center is (0, 0, 0) hens the translation vector is the center position in the scene
-                std::cout << "destination position:\n" << sphere1->GetTranslation() << std::endl;
+                std::cout << "destination position:\n" << GetSpherePos().transpose() << std::endl;
                 break;
             case GLFW_KEY_1:
                 if (pickedIndex > 0)
@@ -332,7 +331,11 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
 
 Eigen::Vector3f BasicScene::GetSpherePos()
 {
-    std::cout << sphere1->GetTransform() << std::endl;
     return (sphere1->GetTransform() * Eigen::Vector4f(0,0,0,1)).head(3);
+}
+
+std::vector<Eigen::Vector4f> BasicScene::GetTipsPositionVec() {
+    calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
+    return tips_position;
 }
 

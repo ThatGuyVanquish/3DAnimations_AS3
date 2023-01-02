@@ -17,6 +17,7 @@ public:
     void KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, int scancode, int action, int mods) override;
     void nextCyclicDescentStep();
     Eigen::Vector3f GetSpherePos();
+    bool isReachable();
     std::vector<Eigen::Vector4f> GetTipsPositionVec();
 
     int previousMovingCyl;
@@ -33,4 +34,8 @@ private:
     std::vector<Eigen::Vector4f> tips_position;
     Eigen::Vector4f initial_tip_pos = Eigen::Vector4f(0,0,0.8f,1);
     float scaleFactor;
+    Eigen::Vector3f spherePos;
+    int numOfCyls = 5;
+    const float INITIAL_SPHERE_POS = 5.0;
+    const float DELTA = 0.05;
 };

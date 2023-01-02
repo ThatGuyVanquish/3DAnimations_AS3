@@ -44,9 +44,10 @@ static void calcTipsPosition(const Eigen::Vector4f& initial_tip_pos,
     const std::vector<std::shared_ptr<cg3d::Model>>& cyls)
 {
     tips_position[0] = root->GetAggregatedTransform().inverse() * armRoot->GetAggregatedTransform() * Eigen::Vector4f(0, 0, 0, 1);
-    tips_position[1] = root->GetAggregatedTransform().inverse() * cyls[0]->GetAggregatedTransform() * initial_tip_pos;
-    tips_position[2] = root->GetAggregatedTransform().inverse() * cyls[1]->GetAggregatedTransform() * initial_tip_pos;
-    tips_position[3] = root->GetAggregatedTransform().inverse() * cyls[2]->GetAggregatedTransform() * initial_tip_pos;
+    for (int i = 1; i < tips_position.size(); i++)
+    {
+        tips_position[i] = root->GetAggregatedTransform().inverse() * cyls[i-1]->GetAggregatedTransform() * initial_tip_pos;
+    }
 }
 
 static bool inGimbalLock(Eigen::Matrix3f rotation)
@@ -59,6 +60,7 @@ static bool inGimbalLock(Eigen::Matrix3f rotation)
 }
 
 static bool cyclicCoordinateDescent(std::vector<std::shared_ptr<cg3d::Model>> cyls,
+                                    std::vector<std::shared_ptr<cg3d::Model>> axis,
                                     std::vector<Eigen::Vector4f> tips,
                                     Eigen::Vector3f destination, const float delta, int &index,
                                     const std::shared_ptr<cg3d::Movable>& root,
@@ -70,17 +72,33 @@ static bool cyclicCoordinateDescent(std::vector<std::shared_ptr<cg3d::Model>> cy
     // Calculate R and E
     Eigen::Vector3f R = tips[index].head(3);
     Eigen::Vector3f E = tips[cyls.size()].head(3);
-    Eigen::Vector3f RE = (E - R).normalized();
-    Eigen::Vector3f RD = (destination - R).normalized();
+    Eigen::Vector3f RE = (E - R);//.normalized();
+    Eigen::Vector3f RD = (destination - R);//.normalized();
+    RE = (axis[index]->GetAggregatedTransform() * Eigen::Vector4f({RE[0], RE[1], RE[2], 1})).head(3);
+    RD = (axis[index]->GetAggregatedTransform() * Eigen::Vector4f({RD[0], RD[1], RD[2], 1})).head(3);
+
     std::cout << "RE is " << RE.transpose() << std::endl;
     std::cout << "RD is " << RD.transpose() << std::endl;
 
 //    int dot = RD.normalized().dot(RE.normalized());
-//    float a = acos(RD.normalized().dot(RE.normalized()));
+//    float a = acos(dot);
 //    Eigen::Vector3f normal = RE.normalized().cross(RD.normalized());
 //    cyls[index]->Rotate(a/10.0f, normal);
     Eigen::Quaternionf q = Eigen::Quaternionf::FromTwoVectors(RE, RD);
+    Eigen::Quaternionf p(cg3d::Movable::GetRotation(/*root->GetAggregatedTransform().inverse() **/ cyls[index]->GetAggregatedTransform()).rotation().inverse());
+//    q = q*p;
+    Eigen::AngleAxisf from_q;
+    from_q = q;
+
+    std::cout << "before slerp AngleAxis angle:\n" << from_q.angle() * (180.0/3.141592653589793238463) << std::endl;
+    std::cout << "before slerp AngleAxis axis:\n" << from_q.axis() << std::endl;
+
     q = q.slerp(0.9f, Eigen::Quaternionf::Identity());
+
+    from_q = q;
+    std::cout << "after slerp AngleAxis angle:\n" << from_q.angle() * (180.0/3.141592653589793238463) << std::endl;
+    std::cout << "after slerp AngleAxis axis:\n" << from_q.axis()  << std::endl;
+//    cyls[index]->RotateInSystem(axis[index]->GetTout().rotation(), from_q.angle(), from_q.axis());
     cyls[index]->Rotate(q);
     if (inGimbalLock(cyls[index]->GetRotation()))
     {
@@ -97,6 +115,8 @@ static bool cyclicCoordinateDescent(std::vector<std::shared_ptr<cg3d::Model>> cy
         return false;
     }
     index--;
-    return true;
+//    return true;
+    // for testing each step
+    return false;
 }
 

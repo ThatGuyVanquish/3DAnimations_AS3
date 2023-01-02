@@ -34,14 +34,11 @@
 
 using namespace cg3d;
 
-static const float DELTA = 0.05;
 const int DISPLAY_WIDTH = 800;
 const int DISPLAY_HEIGHT = 800;
 const float CAMERA_ANGLE = 45.0f;
 const float NEAR = 0.1f;
 const float FAR = 120.0f;
-int numOfCyls = 3;
-const float INITIALSPHEREPOS = 5.0;
 
 void BasicScene::Init(float fov, int width, int height, float near, float far)
 {
@@ -69,7 +66,6 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
 
     // a common invisible parent for the multi-links arm and axis
     armRoot = Movable::Create("armRoot");
-//    AddChild(armRoot);
     root->AddChild(armRoot);
 
     // scale factor for the multi-links arm
@@ -86,8 +82,9 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     global_axis = Model::Create("global axis",coordsys,material1);
     global_axis->mode = 1;
     global_axis->Scale(4,Axis::XYZ);
-    //cylinders axis
     root->AddChild(global_axis);
+
+    // cylinders and their axis
     for (int i = 0; i < numOfCyls; i++)
     {
         axis.push_back(Model::Create("axis" + std::to_string(i), coordsys, material1));
@@ -104,13 +101,13 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
         }
     }
 
-    // initial transformations for first cylinder and it's axis
+    // initial transformations for cylinders and their axis
     cyls[0]->Scale(scaleFactor,Axis::Z);
     cyls[0]->Translate({0,0,0.8f*scaleFactor});
     cyls[0]->SetCenter(Eigen::Vector3f(0,0,-0.8f*scaleFactor));
     axis[0]->mode = 1;
     axis[0]->Scale(2.0f*1.6f*scaleFactor);
-    for(int i = 1;i < numOfCyls; i++)
+    for(int i = 1; i < numOfCyls; i++)
     {
         cyls[i]->Scale(scaleFactor,Axis::Z);
         cyls[i]->Translate(1.6f*scaleFactor,Axis::Z);
@@ -120,6 +117,9 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
         axis[i]->Scale(2.0f*1.6f*scaleFactor);
         axis[i]->Translate(0.8f*scaleFactor,Axis::Z);
     }
+
+    // rotate arm to align with Y axis
+//    armRoot->Rotate(-M_PI_2, Axis::X);
 
     // init tips position
     tips_position.push_back(armRoot->GetAggregatedTransform() * Eigen::Vector4f(0, 0, 0, 1));
@@ -133,10 +133,10 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
 
     // sphere
     sphere1->showWireframe = true;
-    sphere1->Translate({ INITIALSPHEREPOS,0,0});
+    sphere1->Translate({INITIAL_SPHERE_POS, 0, 0});
 
     camera->Translate(50, Axis::X);
-    camera->cg3d::Movable::Rotate((M_PI_2 / 2), Axis::Y);
+    camera->cg3d::Movable::Rotate((M_PI_2), Axis::Y);
     root->AddChild(sphere1);
 
     previousMovingCyl = cyls.size() - 1;
@@ -151,9 +151,7 @@ void BasicScene::Update(const Program& program, const Eigen::Matrix4f& proj, con
     program.SetUniform1f("specular_exponent", 5.0);
     program.SetUniform4f("light_position", 0.0, 15.0, 0.0, 1.0);
 
-    calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
-    Eigen::Vector3f spherePos = GetSpherePos();
-    if ((tips_position[0].head(3) - spherePos).norm() > 3*1.6f*scaleFactor + DELTA)
+    if (isReachable())
     {
         doCyclicDescent = false;
     }
@@ -250,7 +248,6 @@ void BasicScene::CursorPosCallback(Viewport* viewport, int x, int y, bool draggi
 void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scancode, int action, int mods)
 {
     auto system = camera->GetRotation().transpose();
-    Eigen::Vector3f spherePos;
 
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         switch (key) // NOLINT(hicpp-multiway-paths-covered)
@@ -259,9 +256,7 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                 armRoot->Translate(Eigen::Vector3f(1.6f, 1.6f, 1.6f));
                 break;
             case GLFW_KEY_SPACE:
-                calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
-                spherePos = GetSpherePos();
-                if ((tips_position[0].head(3) - spherePos).norm() > 3*1.6f*scaleFactor + DELTA)
+                if (isReachable())
                 {
                     std::cout << "cannot reach.\ndestination:\n" << spherePos.transpose()
                                 << "\nstart tip position:\n" << tips_position[0].head(3).transpose()
@@ -329,12 +324,11 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
             case GLFW_KEY_T:
                 // recalculate tips position
                 calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
-                std::cout << "tips_position position:\n"
-                          << "link 0\n" << std::setprecision(5) << tips_position[0].head(3).transpose() << "\n"
-                          << "link 1\n" << std::setprecision(5) << tips_position[1].head(3).transpose() << "\n"
-                          << "link 2\n" << std::setprecision(5) << tips_position[2].head(3).transpose() << "\n"
-                          << "link 3\n" << std::setprecision(5) << tips_position[3].head(3).transpose() << "\n"
-                          << std::endl;
+                std::cout << "tips_position position:" << std::endl;
+                for (int i = 0; i < tips_position.size(); i++)
+                {
+                    std::cout << "link " << i << "\n" << std::setprecision(5) << tips_position[i].head(3).transpose() << std::endl;
+                }
                 break;
             case GLFW_KEY_Y:
                 // sphere center is (0, 0, 0) hens the translation vector is the center position in the scene
@@ -367,13 +361,20 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
 void BasicScene::nextCyclicDescentStep()
 {
     if (doCyclicDescent)
-        doCyclicDescent = cyclicCoordinateDescent(cyls, tips_position, GetSpherePos(), DELTA, previousMovingCyl, root, armRoot);
+        doCyclicDescent = cyclicCoordinateDescent(cyls, axis, tips_position, GetSpherePos(), DELTA, previousMovingCyl, root, armRoot);
 }
 
 Eigen::Vector3f BasicScene::GetSpherePos()
 {
     return (sphere1->GetTransform() * Eigen::Vector4f(0,0,0,1)).head(3);
 //    return (root->GetAggregatedTransform() * sphere1->GetAggregatedTransform() * Eigen::Vector4f(0,0,0,1)).head(3);
+}
+
+bool BasicScene::isReachable()
+{
+    calcTipsPosition(initial_tip_pos, tips_position, root, armRoot, cyls);
+    spherePos = GetSpherePos();
+    return (tips_position[0].head(3) - spherePos).norm() > numOfCyls*1.6f*scaleFactor + DELTA;
 }
 
 //std::vector<Eigen::Vector4f> BasicScene::GetTipsPositionVec() {

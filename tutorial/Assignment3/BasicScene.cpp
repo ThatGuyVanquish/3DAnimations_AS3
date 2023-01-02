@@ -35,6 +35,13 @@
 using namespace cg3d;
 
 static const float DELTA = 0.05;
+const int DISPLAY_WIDTH = 800;
+const int DISPLAY_HEIGHT = 800;
+const float CAMERA_ANGLE = 45.0f;
+const float NEAR = 0.1f;
+const float FAR = 120.0f;
+int numOfCyls = 3;
+const float INITIALSPHEREPOS = 5.0;
 
 void BasicScene::Init(float fov, int width, int height, float near, float far)
 {
@@ -80,29 +87,30 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     global_axis->mode = 1;
     global_axis->Scale(4,Axis::XYZ);
     //cylinders axis
-    axis.push_back(Model::Create("axis0",coordsys,material1));
-    axis.push_back(Model::Create("axis1",coordsys,material1));
-    axis.push_back(Model::Create("axis2",coordsys,material1));
-    // cylinders
-    cyls.push_back( Model::Create("cyl0",cylMesh, material));
-    cyls.push_back( Model::Create("cyl1",cylMesh, material));
-    cyls.push_back( Model::Create("cyl2",cylMesh, material));
-    // define dependencies
     root->AddChild(global_axis);
-    armRoot->AddChild(axis[0]);
-    armRoot->AddChild(cyls[0]);
-    for(int i = 1;i < 3; i++)
+    for (int i = 0; i < numOfCyls; i++)
     {
-        cyls[i-1]->AddChild(cyls[i]);
-        cyls[i-1]->AddChild(axis[i]);
+        axis.push_back(Model::Create("axis" + std::to_string(i), coordsys, material1));
+        cyls.push_back(Model::Create("cyl" + std::to_string(i), cylMesh, material));
+        if (i == 0)
+        {
+            armRoot->AddChild(axis[0]);
+            armRoot->AddChild(cyls[0]);
+        }
+        if (i > 0) // dependency on previous cylinder axis
+        {
+            cyls[i - 1]->AddChild(cyls[i]);
+            cyls[i - 1]->AddChild(axis[i]);
+        }
     }
-    // initial transformations
+
+    // initial transformations for first cylinder and it's axis
     cyls[0]->Scale(scaleFactor,Axis::Z);
     cyls[0]->Translate({0,0,0.8f*scaleFactor});
     cyls[0]->SetCenter(Eigen::Vector3f(0,0,-0.8f*scaleFactor));
     axis[0]->mode = 1;
     axis[0]->Scale(2.0f*1.6f*scaleFactor);
-    for(int i = 1;i < 3; i++)
+    for(int i = 1;i < numOfCyls; i++)
     {
         cyls[i]->Scale(scaleFactor,Axis::Z);
         cyls[i]->Translate(1.6f*scaleFactor,Axis::Z);
@@ -114,18 +122,21 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     }
 
     // init tips position
-    tips_position.push_back(armRoot->GetAggregatedTransform() * Eigen::Vector4f(0,0,0,1));
-    tips_position.push_back(cyls[0]->GetAggregatedTransform() * initial_tip_pos);
-    tips_position.push_back(cyls[1]->GetAggregatedTransform() * initial_tip_pos);
-    tips_position.push_back(cyls[2]->GetAggregatedTransform() * initial_tip_pos);
+    tips_position.push_back(armRoot->GetAggregatedTransform() * Eigen::Vector4f(0, 0, 0, 1));
+    for (int i = 1; i < numOfCyls + 1; i++) {
+        tips_position.push_back(cyls[i - 1]->GetAggregatedTransform() * initial_tip_pos);
+    }
+    
+    //tips_position.push_back(cyls[0]->GetAggregatedTransform() * initial_tip_pos);
+    //tips_position.push_back(cyls[1]->GetAggregatedTransform() * initial_tip_pos);
+    //tips_position.push_back(cyls[2]->GetAggregatedTransform() * initial_tip_pos);
 
     // sphere
     sphere1->showWireframe = true;
-    sphere1->Translate({5,0,0});
+    sphere1->Translate({ INITIALSPHEREPOS,0,0});
 
-
-    camera->Translate(30, Axis::X);
-    camera->cg3d::Movable::Rotate(M_PI_2, Axis::Y);
+    camera->Translate(50, Axis::X);
+    camera->cg3d::Movable::Rotate((M_PI_2 / 2), Axis::Y);
     root->AddChild(sphere1);
 
     previousMovingCyl = cyls.size() - 1;
@@ -215,9 +226,9 @@ void BasicScene::CursorPosCallback(Viewport* viewport, int x, int y, bool draggi
                     pickedModel->TranslateInSystem(system, {-float(xAtPress - x) / moveCoeff, float(yAtPress - y) / moveCoeff, 0});
                 }
             if (buttonState[GLFW_MOUSE_BUTTON_MIDDLE] != GLFW_RELEASE)
-                pickedModel->RotateInSystem(system, float(xAtPress - x) / angleCoeff, Axis::Z);
-            if (buttonState[GLFW_MOUSE_BUTTON_LEFT] != GLFW_RELEASE) {
                 pickedModel->RotateInSystem(system, float(xAtPress - x) / angleCoeff, Axis::Y);
+            if (buttonState[GLFW_MOUSE_BUTTON_LEFT] != GLFW_RELEASE) {
+                pickedModel->RotateInSystem(system, float(xAtPress - x) / angleCoeff, Axis::Z);
                 pickedModel->RotateInSystem(system, float(yAtPress - y) / angleCoeff, Axis::X);
             }
         } else {
@@ -275,10 +286,10 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
                 cyls[pickedIndex]->RotateInSystem(axis[pickedIndex]->GetTout().rotation(), -M_PI_2, Axis::X);
                 break;
             case GLFW_KEY_LEFT:
-                cyls[pickedIndex]->RotateInSystem(axis[pickedIndex]->GetTout().rotation(), M_PI_2, Axis::Y);
+                cyls[pickedIndex]->RotateInSystem(axis[pickedIndex]->GetTout().rotation(), M_PI_2, Axis::Z);
                 break;
             case GLFW_KEY_RIGHT:
-                cyls[pickedIndex]->RotateInSystem(axis[pickedIndex]->GetTout().rotation(), -M_PI_2, Axis::Y);
+                cyls[pickedIndex]->RotateInSystem(axis[pickedIndex]->GetTout().rotation(), -M_PI_2, Axis::Z);
                 break;
             case GLFW_KEY_W:
                 camera->TranslateInSystem(system, {0, 0.1f, 0});
@@ -336,6 +347,18 @@ void BasicScene::KeyCallback(Viewport* viewport, int x, int y, int key, int scan
             case GLFW_KEY_2:
                 if (pickedIndex < cyls.size() - 1)
                     pickedIndex++;
+                break;
+            case GLFW_KEY_RIGHT_BRACKET:
+                numOfCyls++;
+                //Init(CAMERA_ANGLE, DISPLAY_WIDTH, DISPLAY_HEIGHT, NEAR, FAR);
+                break;
+            case GLFW_KEY_LEFT_BRACKET:
+                if (numOfCyls > 1)
+                    numOfCyls--;
+                //Init(CAMERA_ANGLE, DISPLAY_WIDTH, DISPLAY_HEIGHT, NEAR, FAR);
+                break;
+            case GLFW_KEY_R:
+                //Init(CAMERA_ANGLE, DISPLAY_WIDTH, DISPLAY_HEIGHT, NEAR, FAR);
                 break;
         }
     }

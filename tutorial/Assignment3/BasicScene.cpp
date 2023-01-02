@@ -82,7 +82,8 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     global_axis = Model::Create("global axis",coordsys,material1);
     global_axis->mode = 1;
     global_axis->Scale(4,Axis::XYZ);
-    root->AddChild(global_axis);
+//    root->AddChild(global_axis);
+    AddChild(global_axis);
 
     // cylinders and their axis
     for (int i = 0; i < numOfCyls; i++)
@@ -119,7 +120,6 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     }
 
     // rotate arm to align with Y axis
-//    armRoot->Rotate(-M_PI_2, Axis::X);
 
     // init tips position
     tips_position.push_back(armRoot->GetAggregatedTransform() * Eigen::Vector4f(0, 0, 0, 1));

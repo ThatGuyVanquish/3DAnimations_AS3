@@ -132,6 +132,8 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
 
 }
 
+void BasicScene::nextCyclicDescentStep() {}
+
 void BasicScene::Update(const Program& program, const Eigen::Matrix4f& proj, const Eigen::Matrix4f& view, const Eigen::Matrix4f& model)
 {
     Scene::Update(program, proj, view, model);

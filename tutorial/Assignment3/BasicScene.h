@@ -30,8 +30,6 @@ private:
     std::vector<std::shared_ptr<cg3d::Model>> cyls, axis;
     std::shared_ptr<cg3d::Model> global_axis;
     int pickedIndex = 0;
-    int tipIndex = 0;
-    std::vector<Eigen::Vector4f> tips_position;
     Eigen::Vector4f initial_tip_pos = Eigen::Vector4f(0,0,0.8f,1);
     float scaleFactor;
     Eigen::Vector3f spherePos;

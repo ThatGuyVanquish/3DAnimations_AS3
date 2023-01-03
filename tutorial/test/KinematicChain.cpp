@@ -60,7 +60,6 @@ static void rotateInZXZ(const Eigen::Matrix3f& rotation,
 }
 
 static void rotateBasedOnEulerAngles(const std::vector<std::shared_ptr<cg3d::Model>>& cyls,
-                                     const std::vector<std::shared_ptr<cg3d::Model>>& axis,
                                      int index,
                                      const Eigen::Vector3f angles)
 {

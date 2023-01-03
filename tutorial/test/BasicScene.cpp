@@ -245,7 +245,8 @@ void BasicScene::CursorPosCallback(Viewport* viewport, int x, int y, bool draggi
                     cyls[pickedIndex]->RotateInSystem(axis[pickedIndex]->GetRotation(), float(xAtPress - x) / angleCoeff, Axis::Y);
                 if (buttonState[GLFW_MOUSE_BUTTON_LEFT] != GLFW_RELEASE)
                 {
-                    // Rotate based on euler angles
+                    rotateBasedOnEulerAngles(cyls, pickedIndex, { float(xAtPress - x) / 200, 0, 0 });
+                    rotateBasedOnEulerAngles(cyls, pickedIndex, { 0, float(y - yAtPress) / 200, 0 });
                 }
             }
             else
@@ -347,7 +348,7 @@ void BasicScene::KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, in
             {
                 // Rotate around positive X axis using euler angles
                 Eigen::Vector3f dir = { 0, 0.1f, 0 };
-                rotateBasedOnEulerAngles(cyls, axis, pickedIndex, dir);
+                rotateBasedOnEulerAngles(cyls, pickedIndex, dir);
             }
             else
                 root->Rotate(0.1f, Axis::X);
@@ -357,7 +358,7 @@ void BasicScene::KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, in
             {
                 // Rotate around negative X axis using euler angles
                 Eigen::Vector3f dir = { 0, -0.1f, 0 };
-                rotateBasedOnEulerAngles(cyls, axis, pickedIndex, dir);
+                rotateBasedOnEulerAngles(cyls,  pickedIndex, dir);
             }
             else
                 root->Rotate(-0.1f, Axis::X);
@@ -367,7 +368,7 @@ void BasicScene::KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, in
             {
                 // Rotate around positive Z axis using euler angles
                 Eigen::Vector3f dir = { 0.1f, 0, 0 };
-                rotateBasedOnEulerAngles(cyls, axis, pickedIndex, dir);
+                rotateBasedOnEulerAngles(cyls, pickedIndex, dir);
             }
             else
                 root->Rotate(0.1f, Axis::Z);
@@ -377,7 +378,7 @@ void BasicScene::KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, in
             {
                 // Rotate around negative Z axis using euler angles
                 Eigen::Vector3f dir = { -0.1f, 0, 0 };
-                rotateBasedOnEulerAngles(cyls, axis, pickedIndex, dir);
+                rotateBasedOnEulerAngles(cyls, pickedIndex, dir);
             }
             else
                 root->Rotate(-0.1f, Axis::Z);

@@ -1,105 +1,55 @@
-# EngineForAnimationCourse
+# Lior and Nave's 3D Animations Assignment 3 (Inverse Kinematics)
 
-### Graphic Engine based on Libigl
+***********************************
+The assignment is coded in the folder [Assignment3](https://github.com/ThatGuyVanquish/3DAnimations_AS3/tree/master/tutorial/Assignment3)
+#    
 
+Our implementation added a CPP file:
+[KinematicChain.cpp](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/master/tutorial/Assignment3/KinematicChain.cpp)
 
+Which holds static functions used to calculate the position of the cylinder for moving, either by arrows\camera (using euler angles) and through the attempt to reach the sphere (cyclic descent).
 
-#### First: clone or download the project from GitHub
+### 
 
+The function [*cyclicCoordinateDescent*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/d3504bf15820731ea01dd67f60b3061491567ba4/tutorial/Assignment3/KinematicChain.cpp#L62) is using the equations from the article and basic trigonometry to get the angle to rotate and the vector to rotate around, then physically rotates the arm's parts one by one in order to reach the destination.
 
+The virtual function [*nextCyclicStep*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/d3504bf15820731ea01dd67f60b3061491567ba4/engine/Scene.h#L39) was added to Scene.h, which is called every time the renderer calls for [*RenderAllViewports*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/d3504bf15820731ea01dd67f60b3061491567ba4/engine/Renderer.cpp#L48)
+The function checks the state of a boolean variable to use cyclicCoordinateDescent when it can (and is instructed to by pressing *space*) to move the arm to the destination.
 
-### Building / Debugging with CMake + Visual Studio on <u>Windows</u>
+The function [*rotateBasedOnEulerAngles*]() is the function used by the arrows to rotate cylinders around it's axis based on euler angles. It uses the function [*getZXZRotationMatrices*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/1b0f5cdced9ed200199ae3c94bdf76467f5446e8/tutorial/Assignment3/KinematicChain.cpp#L14) to calculate the new rotation matrix and sets the rotation as per the euler angle matrices.
 
-1. Download Cmake from the link in the site
-2. Run Cmake GUI, choose the project folder and destination folder for the cpp project files, press configure choose compiler (VS2022 for example). After configuration finished successfully press configure again and then press generate. 
-3. If everything passes successfully click the "launch project" button or go to the build folder and launch the project from there. 
-4. Build and start debugging.
+##
+### BUTTON MAPPINGS
 
+**H**      -> Hide\show axis
 
+#### Camera movement
+**WASDBF** -> Move the camera around
 
-### Building / Debugging with Visual Studio Code on <u>Windows</u>
+**Can also move camera with the mouse when there isn't a picked object**
 
-> Note: some of the notes below about debugging are probably also relevant for **Linux / macOS** (with some adjustments) but I haven't tested it.
+#### Cylinder picking
+**1, 2**   -> Cycle between cylinder indices (I.E. set the cylinder as "picked object to be moved by keyboard")
 
+**3**      -> Unpick any cylinder previously picked
 
+#### Amount of cylinders
+**[, ]**   -> Move the number of cylinders up or down (down to at least 1). Note that this resets the scene.
 
-#### CMake Tools extension
+**R**      -> Reset the scene
 
-If when scanning for kits (compilers) the CMake Tools extension doesn't find anything (even though you have it installed), check if changing the system locale to "**English (United States)**" - locale "Israel (Hebrew)" doesn't work (other locales probably work but I only tested "English (United States)". Afterwards **restart the computer** and **scan for kits** again.
+#### Printouts
+**P**      -> Prints the Euler Rotation Matrices of **the picked object** or **root**
 
-This is how you do it:
+**T**      -> Prints the tip position of each link in the arm
 
-<img src="docs/windows_change_system_locale.png" alt="How to change system locale screenshot" style="zoom:80%;" />
+**Y**      -> Prints the location of the sphere
 
+#### Arrow key movements
+**UP**     -> Moves *Picked **Cylinder*** around positive X axis using euler angles
+**DOWN**   -> Moves *Picked **Cylinder*** around negative X axis using euler angles
+**RIGHT**  -> Moves *Picked **Cylinder*** around positive Z axis using euler angles
+**LEFT**   -> Moves *Picked **Cylinder*** around negative Z axis using euler angles
 
-
-#### Building / Debugging
-
-1. Make sure you choose the **Debug** build variant:
-
-![VS Code how to choose build variant screenshot](docs/vsc_build_variant_debug.png)
-
-2. Build and click **(Windows) Launch** to start debugging
-
-
-
-#### Updating the Launch Configuration
-
-If the launch configuration is not set up correctly try the following:
-
-1. In VS Code, open *.vscode/launch.json*
-2. Click the button **Add Configuration...**
-3. Choose **C/C++: (Windows) Launch**
-
-![VS Code how to add debug configuration screenshot](docs/vsc_add_configuration.png)
-
-4. Change **program** and **cwd** to the correct paths (I also changed **console** but it's not mandatory).
-
-
-
-Here's a configuration that works for me :
-
-```json
-{
-    "name": "(Windows) Launch",
-    "type": "cppvsdbg",
-    "request": "launch",
-    "program": "${workspaceFolder}/build/Debug/Demo_bin.exe",
-    "args": [],
-    "stopAtEntry": false,
-    "cwd": "${workspaceFolder}/build/",
-    "environment": [],
-    "console": "integratedTerminal"
-}
-```
-
-
-
-5. Click **(Windows) Launch** to start debugging
-
-![CLion start debugging screenshot](docs/vsc_start_debugging.png)
-
-
-
-### Building / debugging with CLion
-
-
-
-When you first open the project you will see the following (or a similar) screen
-
-<img src="docs/clion_open_project_wizard.png" alt="CLion project wizard options screenshot" style="zoom: 67%;" />
-
-1. **Do not use the default (Ninja) generator!**
-
-   On Windows choose: "Let CMake decide"
-
-   On Linux/Mac choose "Unix Makefiles"
-
-
-2. To share the build directory with VS choose build directory to be "build"
-
-
-
-Afterwards, open the Demo_bin run configuration and put $CMakeCurrentGenerationDir$ in the working directory.
-
-<img src="docs/clion_debug_configuration.png" alt="CLion run configuration working directory screenshot" style="zoom:67%;" />
+### **SPACE**
+**Moves the arm towards the destination (sphere's center with delta DELTA) *if and only if* it can reach**

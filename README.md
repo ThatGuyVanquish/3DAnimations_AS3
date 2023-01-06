@@ -16,7 +16,7 @@ The function [*cyclicCoordinateDescent*](https://github.com/ThatGuyVanquish/3DAn
 The virtual function [*nextCyclicStep*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/d3504bf15820731ea01dd67f60b3061491567ba4/engine/Scene.h#L39) was added to Scene.h, which is called every time the renderer calls for [*RenderAllViewports*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/d3504bf15820731ea01dd67f60b3061491567ba4/engine/Renderer.cpp#L48)
 The function checks the state of a boolean variable to use cyclicCoordinateDescent when it can (and is instructed to by pressing *space*) to move the arm to the destination.
 
-The function [*rotateBasedOnEulerAngles*]() is the function used by the arrows to rotate cylinders around it's axis based on euler angles. It uses the function [*getZXZRotationMatrices*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/1b0f5cdced9ed200199ae3c94bdf76467f5446e8/tutorial/Assignment3/KinematicChain.cpp#L14) to calculate the new rotation matrix and sets the rotation as per the euler angle matrices.
+The function [*rotateBasedOnEulerAngles*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/e6dae55f9fa5d5f437fcdd89e8935603cd08e97e/tutorial/Assignment3/KinematicChain.cpp#L57) is the function used by the arrows to rotate cylinders around it's axis based on euler angles. It uses the function [*getZXZRotationMatrices*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/e6dae55f9fa5d5f437fcdd89e8935603cd08e97e/tutorial/Assignment3/KinematicChain.cpp#L18) to calculate the new rotation matrix and sets the rotation as per the euler angle matrices.
 
 ##
 ### BUTTON MAPPINGS

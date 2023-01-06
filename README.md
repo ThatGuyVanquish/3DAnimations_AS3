@@ -11,7 +11,7 @@ Which holds static functions used to calculate the position of the cylinder for 
 
 ### 
 
-The function [*cyclicCoordinateDescentStep*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/eb88b1ff5268d3fb8253f8e4c8e373bc0689a354/tutorial/Assignment3/KinematicChain.cpp#L69) is using the equations from the article and basic trigonometry to get the angle to rotate and the vector to rotate around, then physically rotates the arm's parts one by one in order to reach the destination.
+The function [*cyclicCoordinateDescentStep*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/master/tutorial/Assignment3/KinematicChain.cpp#L69) is using the equations from the article and basic trigonometry to get the angle to rotate and the vector to rotate around, then physically rotates the arm's parts one by one in order to reach the destination.
 
 The virtual function [*nextCyclicDescentStep*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/master/engine/Scene.h#L39) was added to Scene.h, which is called every time the renderer calls for [*RenderAllViewports*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/master/engine/Renderer.cpp#L48).
          The function checks the state of a boolean variable to use cyclicCoordinateDescentStep when it can (and is instructed to by pressing *space*) to move the arm to the destination.

@@ -28,8 +28,6 @@ void BasicScene::Init(float fov, int width, int height, float near, float far)
     material = std::make_shared<cg3d::Material>("material", phongShader);
     material1 = std::make_shared<cg3d::Material>("material1", pickingShader);
     auto basicShader = std::make_shared<Program>("shaders/basicShader");
-    material2 = std::make_shared<cg3d::Material>("material2", basicShader);
-    material2->AddTexture(0, "textures/grass.bmp", 2);
 
     sphereMesh = IglLoader::MeshFromFiles("sphere_igl", "data/sphere.obj") ;
     cylMesh = IglLoader::MeshFromFiles("cyl_igl","data/zCylinder.obj") ;
@@ -64,8 +62,10 @@ void BasicScene::Update(const Program& program, const Eigen::Matrix4f& proj, con
 void BasicScene::nextCyclicDescentStep()
 {
     if (doCyclicDescent)
-    {
+    { 
         Eigen::Vector3f spherePos = getSpherePosition();
+        spherePos = root->GetRotation().transpose() * spherePos; // set sphere position to global coordinates without root rotation
+        //std::cerr << "SPHERE POS IS " << spherePos << std::endl;
         doCyclicDescent = cyclicCoordinateDescent(cyls, axis, spherePos, DELTA, cylinderToMove, root);
     }
 }
@@ -150,7 +150,7 @@ void BasicScene::emptyCylinderVectors()
 // Calculation methods
 Eigen::Vector3f BasicScene::getSpherePosition()
 {
-    return (sphere->GetAggregatedTransform() * Eigen::Vector4f(0, 0, 0, 1)).head(3);
+    return sphere->GetAggregatedTransform().col(3).head(3);
 }
 
 bool BasicScene::isReachable()
@@ -202,10 +202,10 @@ void BasicScene::pickedACylinder(int index)
     pickedIndex = index;
     for (std::size_t i = 0; i < cyls.size(); i++)
     {
-        cyls[i]->material = material;
+        cyls[i]->showWireframe = false;
     }
     if (index == -1) return;
-    cyls[index]->material = material2;
+    cyls[index]->showWireframe = true;
 }
 
 void BasicScene::ScrollCallback(Viewport* viewport, int x, int y, int xoffset, int yoffset, bool dragging, int buttonState[])
@@ -326,9 +326,9 @@ void BasicScene::KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, in
 
         // Cylinder Movement
         case GLFW_KEY_SPACE: // Start/stop IK animation
-            std::cout << "\n\n\n";
-            printAllTips(cyls);
-            std::cout << "\n\n\n";
+            //std::cout << "\n\n\n";
+            //printAllTips(cyls);
+            //std::cout << "\n\n\n";
 
             if (isReachable())
             {

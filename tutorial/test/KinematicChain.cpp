@@ -43,9 +43,6 @@ static void rotateInZXZ(const Eigen::Matrix3f& rotation,
                         Eigen::Matrix3f& newRotation)
 {
     Eigen::Vector3f rotationsEulerAngles = rotation.eulerAngles(2, 0, 2);
-    // for testing purposes
-    std::cerr << "rotation.eulerAngles(2, 0, 2):\n" << 180.0f / M_PI * rotationAngles << std::endl;
-    //
     Eigen::Vector3f test1 = rotationsEulerAngles;
     auto tz1 = Eigen::AngleAxisf(test1[0], Eigen::Vector3f::UnitZ());
     auto tx = Eigen::AngleAxisf(test1[1], Eigen::Vector3f::UnitX());
@@ -77,27 +74,19 @@ static bool cyclicCoordinateDescent(const std::vector<std::shared_ptr<cg3d::Mode
                                     const std::shared_ptr<cg3d::Movable>& root)
 {
     if (index == -1) index = (int)cyls.size() - 1;
-    std::cerr << "Current cylinder index for CD is " << index << std::endl;
     // Calculate R and E
     float startOfCylOffset = -0.8f, tipOfCylOffset = 0.8f;
     Eigen::Vector3f R = getTipPosition(index, startOfCylOffset, cyls); // Start of current moving cylinder
     Eigen::Vector3f E = getTipPosition((int)cyls.size() - 1, tipOfCylOffset, cyls); // Tip of the arm
-    Eigen::Vector3f RE = (R - E).normalized();
-    Eigen::Vector3f RD = (R - dest).normalized();
-
-    // Calculating using euler angles
-    int dot = RD.dot(RE);
-    float a = acos(dot);
+    Eigen::Vector3f RE = (E - R).normalized();
+    Eigen::Vector3f RD = (dest - R).normalized();
     Eigen::Vector3f normal = RE.cross(RD);
-    cyls[index]->Rotate(a/10.0f, normal);
+    float dot = RD.dot(RE);
+    if (abs(dot) > 1) dot = 1.0f;
+    float theta = acos(dot) / 10;
 
-    // Calculating the quaternion
-
-    
-    //Eigen::Quaternionf q = Eigen::Quaternionf::FromTwoVectors(RE, RD);
-    //q = q.slerp(0.9f, Eigen::Quaternionf::Identity());
-
-    //cyls[index]->Rotate(q);
+    Eigen::Vector3f rotateAroundVector = cyls[index]->GetAggregatedTransform().block<3, 3>(0, 0).inverse() * normal;
+    cyls[index]->Rotate(theta, rotateAroundVector);
 
     // Calculate new delta to check if should stop moving
     E = getTipPosition((int)cyls.size() - 1, tipOfCylOffset, cyls);
@@ -108,10 +97,9 @@ static bool cyclicCoordinateDescent(const std::vector<std::shared_ptr<cg3d::Mode
         index = 0;
         return false;
     }
+
     index--;
-    // commented out to test at each step
-    //return true
-    return false;
+    return true;
 }
 
 // Functions for testing purposes:

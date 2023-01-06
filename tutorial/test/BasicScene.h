@@ -38,7 +38,6 @@ private:
     std::shared_ptr<cg3d::Program> pickingShader;
     std::shared_ptr<cg3d::Material> material;
     std::shared_ptr<cg3d::Material> material1;
-    std::shared_ptr<cg3d::Material> material2;
     std::shared_ptr<cg3d::Mesh> sphereMesh;
     std::shared_ptr<cg3d::Mesh> cylMesh;
     std::shared_ptr<cg3d::Mesh> coordsys;

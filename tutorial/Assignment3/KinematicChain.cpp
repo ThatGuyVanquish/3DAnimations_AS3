@@ -21,7 +21,6 @@ static void getZXZRotationMatrices(const Eigen::Matrix3f &rotation,
                                     Eigen::Matrix3f &psiZ)
 {
     Eigen::Vector3f angles = rotation.eulerAngles(2, 0, 2);
-    std::cerr << "rotation.eulerAngles(2, 0, 2):\n" << 180.0f/M_PI * angles << std::endl;
     float phi = angles[0];
     float theta = angles[1];
     float psi = angles[2];

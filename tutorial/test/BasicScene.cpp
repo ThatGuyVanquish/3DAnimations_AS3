@@ -64,7 +64,8 @@ void BasicScene::nextCyclicDescentStep()
     if (doCyclicDescent)
     { 
         Eigen::Vector3f spherePos = getSpherePosition();
-        doCyclicDescent = cyclicCoordinateDescent(cyls, axis, spherePos, DELTA, cylinderToMove, root);
+        doCyclicDescent = cyclicCoordinateDescentStep(cyls, spherePos, DELTA, cylinderToMove);
+//        doCyclicDescent = fabric(cyls, spherePos, DELTA, cylinderToMove);
     }
 }
 

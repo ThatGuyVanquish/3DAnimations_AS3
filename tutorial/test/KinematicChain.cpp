@@ -45,10 +45,6 @@ static void rotateInZXZ(const Eigen::Matrix3f& rotation,
                         Eigen::Matrix3f& newRotation)
 {
     Eigen::Vector3f rotationsEulerAngles = rotation.eulerAngles(2, 0, 2);
-//    Eigen::Vector3f test1 = rotationsEulerAngles;
-//    auto tz1 = Eigen::AngleAxisf(test1[0], Eigen::Vector3f::UnitZ());
-//    auto tx = Eigen::AngleAxisf(test1[1], Eigen::Vector3f::UnitX());
-//    auto tz2 = Eigen::AngleAxisf(test1[2], Eigen::Vector3f::UnitZ());
 
     rotationsEulerAngles = rotationsEulerAngles + rotationAngles;
     
@@ -56,9 +52,6 @@ static void rotateInZXZ(const Eigen::Matrix3f& rotation,
     auto rotationInX = Eigen::AngleAxisf(rotationsEulerAngles[1], Eigen::Vector3f::UnitX());
     auto rotationInZ2 = Eigen::AngleAxisf(rotationsEulerAngles[2], Eigen::Vector3f::UnitZ());
     newRotation = rotationInZ0 * rotationInX * rotationInZ2;
-    if (inGimbalLock(newRotation)) {
-        std::cout << "inGimbalLock for newRotation: " << newRotation << std::endl;
-    }
 }
 
 static void rotateBasedOnEulerAngles(const std::vector<std::shared_ptr<cg3d::Model>>& cyls,
@@ -73,10 +66,8 @@ static void rotateBasedOnEulerAngles(const std::vector<std::shared_ptr<cg3d::Mod
     cyls[index]->SetTout(newTout);
 }
 
-static bool cyclicCoordinateDescent(const std::vector<std::shared_ptr<cg3d::Model>>& cyls,
-                                    const std::vector<std::shared_ptr<cg3d::Model>>& axis,
-                                    Eigen::Vector3f& dest, const float delta, int& index,
-                                    const std::shared_ptr<cg3d::Movable>& root)
+static bool cyclicCoordinateDescentStep(const std::vector<std::shared_ptr<cg3d::Model>>& cyls,
+                                    Eigen::Vector3f& dest, const float delta, int& index)
 {
     if (index == -1) index = (int)cyls.size() - 1;
     // Calculate R and E
@@ -106,6 +97,91 @@ static bool cyclicCoordinateDescent(const std::vector<std::shared_ptr<cg3d::Mode
 
     index--;
     return true;
+}
+
+static bool fabric(const std::vector<std::shared_ptr<cg3d::Model>>& cyls,
+                   Eigen::Vector3f& dest, const float delta, const float &length) {
+    float startOfCylOffset = -0.8f, tipOfCylOffset = 0.8f;
+    std::vector<Eigen::Vector3f> p;
+    std::vector<float> d;
+
+    // calculate joint positions
+    p.push_back(getTipPosition(0, startOfCylOffset, cyls));
+    for (int i = 0; i < cyls.size(); i++) {
+        p.push_back(getTipPosition(i, tipOfCylOffset, cyls));
+    }
+
+    // calculate joint distances
+    for (int i = 0; i < p.size() - 1; i++) {
+        d.push_back((p[i + 1] - p[i]).norm());
+    }
+
+    // calculate distance
+    float dist = (dest - p[0]).norm();
+    float sum_of_elems = std::accumulate(d.begin(), d.end(), 0.0);
+
+    // set as b the initial position of the joint p[0]
+    Eigen::Vector3f b = p[0];
+
+    //  Check whether the distance between the end effector p[n] and dest is greater than delta
+    float dif = (dest - p[p.size() - 1]).norm();
+    while (dif > delta) {
+        // STAGE 1: FORWARD REACHING
+
+        // Set the end effector p[n] as dest
+        p[p.size() - 1] = dest;
+
+        for (int i = p.size() - 2; i >= 0; i--) {
+            //  Find the distance ri between the new joint position p[i+1] and the joint p[i]
+            float ri = (p[i + 1] - p[i]).norm();
+            float lambda_i = d[i] / ri;
+
+            // Find the new joint positions p[i]
+            p[i] = (1 - lambda_i) * p[i + 1] + lambda_i * p[i];
+        }
+
+        // STAGE 2: BACKWARD REACHING
+
+        // Set the root p[0] its initial position.
+        p[0] = b;
+
+        for (int i = 0; i < p.size() - 2; i++) {
+            //  Find the distance ri between the new joint position p[i] and the joint p[i+1]
+            float ri = (p[i + 1] - p[i]).norm();
+            float lambda_i = d[i] / ri;
+
+            // Find the new joint positions p[i+1]
+            p[i + 1] = (1 - lambda_i) * p[i] + lambda_i * p[i + 1];
+        }
+
+        dif = (dest - p[p.size() - 1]).norm();
+    }
+
+    // transform cyls based on new positions
+    for (int i = p.size() - 1; i > 0; i--) {
+        //Rotation
+        Eigen::Vector3f d;
+        if (i != 1) {
+            d = (getTipPosition(i - 1, tipOfCylOffset, cyls) -
+                 getTipPosition(i - 2, tipOfCylOffset, cyls)).normalized();
+        } else {
+            d = (getTipPosition(i - 1, tipOfCylOffset, cyls) -
+                 getTipPosition(i - 1, startOfCylOffset, cyls)).normalized();
+        }
+        Eigen::Vector3f l = (p[i] - p[i - 1]).normalized();
+        Eigen::Vector3f normal = d.cross(l);
+        float dot = d.dot(l);
+        if (abs(dot) > 1) dot = 1.0f;
+        float theta = acos(dot) / 10;
+        Eigen::Vector3f rotateAroundVector = cyls[i - 1]->GetAggregatedTransform().block<3, 3>(0, 0).inverse() * normal;
+        cyls[i - 1]->Rotate(theta, rotateAroundVector);
+
+        //Translation
+        Eigen::Vector3f trans = p[i] - getTipPosition(i - 1, tipOfCylOffset, cyls);
+        cyls[i - 1]->Translate(trans);
+    }
+
+    return false;
 }
 
 // Functions for testing purposes:

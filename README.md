@@ -13,12 +13,12 @@ Which holds static functions used to calculate the position of the cylinder for 
 
 The function [*cyclicCoordinateDescentStep*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/eb88b1ff5268d3fb8253f8e4c8e373bc0689a354/tutorial/Assignment3/KinematicChain.cpp#L69) is using the equations from the article and basic trigonometry to get the angle to rotate and the vector to rotate around, then physically rotates the arm's parts one by one in order to reach the destination.
 
-The virtual function [*nextCyclicDescentStep*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/eb88b1ff5268d3fb8253f8e4c8e373bc0689a354/engine/Scene.h#L39) was added to Scene.h, which is called every time the renderer calls for [*RenderAllViewports*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/d3504bf15820731ea01dd67f60b3061491567ba4/engine/Renderer.cpp#L48).
+The virtual function [*nextCyclicDescentStep*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/master/engine/Scene.h#L39) was added to Scene.h, which is called every time the renderer calls for [*RenderAllViewports*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/master/engine/Renderer.cpp#L48).
          The function checks the state of a boolean variable to use cyclicCoordinateDescentStep when it can (and is instructed to by pressing *space*) to move the arm to the destination.
 
 ###
-The function [*rotateBasedOnEulerAngles*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/e6dae55f9fa5d5f437fcdd89e8935603cd08e97e/tutorial/Assignment3/KinematicChain.cpp#L57) is the function used by the arrows to rotate cylinders around it's axis based on euler angles. 
-It uses the function [*getZXZRotationMatrices*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/e6dae55f9fa5d5f437fcdd89e8935603cd08e97e/tutorial/Assignment3/KinematicChain.cpp#L18) to calculate the new rotation matrix and sets the rotation as per the euler angle matrices.
+The function [*rotateBasedOnEulerAngles*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/master/tutorial/Assignment3/KinematicChain.cpp#L57) is the function used by the arrows to rotate cylinders around it's axis based on euler angles. 
+It uses the function [*getZXZRotationMatrices*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/master/tutorial/Assignment3/KinematicChain.cpp#L18) to calculate the new rotation matrix and sets the rotation as per the euler angle matrices.
 
 ##
 ### BUTTON MAPPINGS

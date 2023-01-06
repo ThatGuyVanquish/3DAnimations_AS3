@@ -3,7 +3,9 @@
 #include <Eigen/Core>
 #include "Model.h"
 
-#define M_PI       3.14159265358979323846 
+#define M_PI       3.14159265358979323846
+
+static bool inGimbalLock(Eigen::Matrix3f rotation);
 
 static Eigen::Vector3f getTipPosition(int cyl, float offset, const std::vector<std::shared_ptr<cg3d::Model>>& cyls)
 {
@@ -43,10 +45,10 @@ static void rotateInZXZ(const Eigen::Matrix3f& rotation,
                         Eigen::Matrix3f& newRotation)
 {
     Eigen::Vector3f rotationsEulerAngles = rotation.eulerAngles(2, 0, 2);
-    Eigen::Vector3f test1 = rotationsEulerAngles;
-    auto tz1 = Eigen::AngleAxisf(test1[0], Eigen::Vector3f::UnitZ());
-    auto tx = Eigen::AngleAxisf(test1[1], Eigen::Vector3f::UnitX());
-    auto tz2 = Eigen::AngleAxisf(test1[2], Eigen::Vector3f::UnitZ());
+//    Eigen::Vector3f test1 = rotationsEulerAngles;
+//    auto tz1 = Eigen::AngleAxisf(test1[0], Eigen::Vector3f::UnitZ());
+//    auto tx = Eigen::AngleAxisf(test1[1], Eigen::Vector3f::UnitX());
+//    auto tz2 = Eigen::AngleAxisf(test1[2], Eigen::Vector3f::UnitZ());
 
     rotationsEulerAngles = rotationsEulerAngles + rotationAngles;
     
@@ -54,6 +56,9 @@ static void rotateInZXZ(const Eigen::Matrix3f& rotation,
     auto rotationInX = Eigen::AngleAxisf(rotationsEulerAngles[1], Eigen::Vector3f::UnitX());
     auto rotationInZ2 = Eigen::AngleAxisf(rotationsEulerAngles[2], Eigen::Vector3f::UnitZ());
     newRotation = rotationInZ0 * rotationInX * rotationInZ2;
+    if (inGimbalLock(newRotation)) {
+        std::cout << "inGimbalLock for newRotation: " << newRotation << std::endl;
+    }
 }
 
 static void rotateBasedOnEulerAngles(const std::vector<std::shared_ptr<cg3d::Model>>& cyls,
@@ -94,6 +99,7 @@ static bool cyclicCoordinateDescent(const std::vector<std::shared_ptr<cg3d::Mode
     float distance = abs(DE.norm());
     if (distance < delta)
     {
+        std::cout << "distance at point of reach: " << distance << std::endl;
         index = 0;
         return false;
     }

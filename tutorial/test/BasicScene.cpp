@@ -64,8 +64,6 @@ void BasicScene::nextCyclicDescentStep()
     if (doCyclicDescent)
     { 
         Eigen::Vector3f spherePos = getSpherePosition();
-        spherePos = root->GetRotation().transpose() * spherePos; // set sphere position to global coordinates without root rotation
-        //std::cerr << "SPHERE POS IS " << spherePos << std::endl;
         doCyclicDescent = cyclicCoordinateDescent(cyls, axis, spherePos, DELTA, cylinderToMove, root);
     }
 }
@@ -76,13 +74,13 @@ void BasicScene::initialSettings()
 {
     for (int i = 0; i < numOfCyls; i++) 
     {
-        // Create cylinder and axies
+        // Create cylinder and axis
         cyls.push_back(Model::Create("Cyl" + std::to_string(i), cylMesh, material));
         axis.push_back(Model::Create("Axis " + std::to_string(i), coordsys, material1));
         // set dependencies
         if (i == 0) // first axis and cylinder depend on scene's root
             root->AddChildren({ axis[0], cyls[0] });
-        else // rest of the axies and cylinders depend on the previous cylinder
+        else // rest of the axis and cylinders depend on the previous cylinder
             cyls[i - 1]->AddChildren({ axis[i], cyls[i] });
     }
 
@@ -281,7 +279,7 @@ void BasicScene::CursorPosCallback(Viewport* viewport, int x, int y, bool draggi
 void BasicScene::KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, int scancode, int action, int mods)
 {
     auto system = camera->GetRotation().transpose();
-    auto tipOfArm = getTipPosition(cyls.size() - 1, -0.8f, cyls);
+    auto tipOfArm = getTipPosition(cyls.size() - 1, 0.8f, cyls);
     float dist = std::abs((tipOfArm - getSpherePosition()).norm());
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
     {
@@ -326,10 +324,6 @@ void BasicScene::KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, in
 
         // Cylinder Movement
         case GLFW_KEY_SPACE: // Start/stop IK animation
-            //std::cout << "\n\n\n";
-            //printAllTips(cyls);
-            //std::cout << "\n\n\n";
-
             if (isReachable())
             {
                 std::cout << "Can reach the destination at " << getSpherePosition().transpose()
@@ -419,9 +413,10 @@ void BasicScene::KeyCallback(cg3d::Viewport* viewport, int x, int y, int key, in
             break;
         case GLFW_KEY_T:
             std::cout << "tip positions:" << std::endl;
+            std::cout << "link " << 0 << "\n" << std::setprecision(5) << getTipPosition(0, -0.8f, cyls).transpose() << std::endl;
             for (int i = 0; i < cyls.size(); i++)
             {
-                std::cout << "link " << i << "\n" << std::setprecision(5) << getTipPosition(i, 0.8f, cyls).transpose() << std::endl;
+                std::cout << "link " << i+1 << "\n" << std::setprecision(5) << getTipPosition(i, 0.8f, cyls).transpose() << std::endl;
             }
             break;
         case GLFW_KEY_Y:

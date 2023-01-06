@@ -91,11 +91,9 @@ void Movable::PropagateTransform() // NOLINT(misc-no-recursion)
 
 void Movable::SetCenter(const Eigen::Vector3f& point)
 {
-    std::cout << "aggregatedTransform before SetCenter:\n" << aggregatedTransform << std::endl;
     Tout.pretranslate(point);
     Tin.pretranslate(-point);
     PropagateTransform();
-    std::cout << "aggregatedTransform after SetCenter:\n" << aggregatedTransform << std::endl;
 }
 
 void Movable::Translate(const Eigen::Vector3f& vec)

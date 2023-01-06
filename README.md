@@ -20,6 +20,9 @@ The function [*rotateBasedOnEulerAngles*]() is the function used by the arrows t
 
 ##
 ### BUTTON MAPPINGS
+
+**H**      -> Hide\show axis
+
 #### Camera movement
 **WASDBF** -> Move the camera around
 

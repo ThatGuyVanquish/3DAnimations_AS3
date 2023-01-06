@@ -16,15 +16,37 @@ The function [*cyclicCoordinateDescent*](https://github.com/ThatGuyVanquish/3DAn
 The virtual function [*nextCyclicStep*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/d3504bf15820731ea01dd67f60b3061491567ba4/engine/Scene.h#L39) was added to Scene.h, which is called every time the renderer calls for [*RenderAllViewports*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/d3504bf15820731ea01dd67f60b3061491567ba4/engine/Renderer.cpp#L48)
 The function checks the state of a boolean variable to use cyclicCoordinateDescent when it can (and is instructed to by pressing *space*) to move the arm to the destination.
 
+The function [*rotateBasedOnEulerAngles*]() is the function used by the arrows to rotate cylinders around it's axis based on euler angles. It uses the function [*getZXZRotationMatrices*](https://github.com/ThatGuyVanquish/3DAnimations_AS3/blob/1b0f5cdced9ed200199ae3c94bdf76467f5446e8/tutorial/Assignment3/KinematicChain.cpp#L14) to calculate the new rotation matrix and sets the rotation as per the euler angle matrices.
+
 ##
 ### BUTTON MAPPINGS
 #### Camera movement
-*WASDBF* -> Move the camera around
+**WASDBF** -> Move the camera around
 
-*Can also move camera with the mouse when there isn't a picked object*
+**Can also move camera with the mouse when there isn't a picked object**
 
 #### Cylinder picking
-*1, 2*   -> Cycle between cylinder indices (I.E. set the cylinder as "picked object to be moved by keyboard")
+**1, 2**   -> Cycle between cylinder indices (I.E. set the cylinder as "picked object to be moved by keyboard")
 
-*3*      -> Unpick any cylinder previously picked
+**3**      -> Unpick any cylinder previously picked
 
+#### Amount of cylinders
+**[, ]**   -> Move the number of cylinders up or down (down to at least 1). Note that this resets the scene.
+
+**R**      -> Reset the scene
+
+#### Printouts
+**P**      -> Prints the Euler Rotation Matrices of **the picked object** or **root**
+
+**T**      -> Prints the tip position of each link in the arm
+
+**Y**      -> Prints the location of the sphere
+
+#### Arrow key movements
+**UP**     -> Moves *Picked **Cylinder*** around positive X axis using euler angles
+**DOWN**   -> Moves *Picked **Cylinder*** around negative X axis using euler angles
+**RIGHT**  -> Moves *Picked **Cylinder*** around positive Z axis using euler angles
+**LEFT**   -> Moves *Picked **Cylinder*** around negative Z axis using euler angles
+
+### **SPACE**
+**Moves the arm towards the destination (sphere's center with delta DELTA) *if and only if* it can reach**
